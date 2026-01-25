@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YOUTRUST Filter 設定</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h1>YOUTRUST Filter</h1>
+
+    <div class="toggle-section">
+      <label class="toggle">
+        <input type="checkbox" id="filterToggle" aria-describedby="toggle-description">
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">フィルター機能</span>
+      <div id="toggle-description" class="sr-only">フィルター機能を有効にすると、登録済み企業の候補者を非表示にします</div>
+    </div>
+
+    <div class="section">
+      <div class="section-header">
+        <h2>フィルター対象企業</h2>
+        <div class="filter-count">
+          <span class="count-label">登録企業数:</span>
+          <span id="filterCount" class="count-value">0</span>
+        </div>
+      </div>
+
+      <div class="add-company">
+        <input type="text" id="companyInput" placeholder="企業名を入力"
+               aria-label="フィルター対象企業名"
+               aria-describedby="input-help">
+        <button id="addButton" aria-label="企業をフィルター対象に追加">追加</button>
+      </div>
+      <div id="input-help" class="sr-only">企業名を入力してEnterキーまたは追加ボタンで登録できます</div>
+
+      <ul id="companyList" class="company-list" role="list" aria-label="フィルター対象企業一覧"></ul>
+    </div>
+
+    <div class="footer">
+      <p class="info">つながりページで指定企業の候補者を非表示にします</p>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
