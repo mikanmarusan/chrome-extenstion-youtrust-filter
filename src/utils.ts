@@ -1,7 +1,7 @@
 import { ErrorLogEntry } from './types';
 
-// デフォルトのフィルター企業
-export const DEFAULT_COMPANIES = ['ラクスル株式会社'];
+// デフォルトのフィルター企業（空配列：ユーザーが明示的に追加する）
+export const DEFAULT_COMPANIES: string[] = [];
 
 // エラーログ管理
 const ERROR_LOG_MAX_SIZE = 30;

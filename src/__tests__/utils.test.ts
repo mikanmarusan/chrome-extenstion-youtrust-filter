@@ -10,8 +10,8 @@ import {
 
 describe('Utils', () => {
   describe('DEFAULT_COMPANIES', () => {
-    it('should have default companies', () => {
-      expect(DEFAULT_COMPANIES).toEqual(['ラクスル株式会社']);
+    it('should be an empty array by default', () => {
+      expect(DEFAULT_COMPANIES).toEqual([]);
     });
   });
 

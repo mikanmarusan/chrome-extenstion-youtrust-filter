@@ -1,7 +1,7 @@
 import { ErrorLogEntry, NotificationType } from './types';
 
-// デフォルトのフィルター企業
-const DEFAULT_COMPANIES = ['ラクスル株式会社'];
+// デフォルトのフィルター企業（空配列：ユーザーが明示的に追加する）
+const DEFAULT_COMPANIES: string[] = [];
 
 // 現在の設定
 let filterEnabled = true;

@@ -25,8 +25,8 @@ import {
   let errorLog: ErrorLogEntry[] = [];
   let errorNotificationTimeout: number | null = null;
 
-  // デフォルトのフィルター企業
-  const DEFAULT_COMPANIES = ['ラクスル株式会社'];
+  // デフォルトのフィルター企業（空配列：ユーザーが明示的に追加する）
+  const DEFAULT_COMPANIES: string[] = [];
 
   // パフォーマンス設定
   // const DEBOUNCE_DELAY = 100; // Currently unused
