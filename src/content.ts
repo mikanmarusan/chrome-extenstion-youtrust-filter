@@ -430,8 +430,10 @@ import {
           const companyElement = card.querySelector(SELECTORS.primary.companyName);
           const companyName = companyElement?.textContent?.trim() || '';
 
-          // フィルター対象企業かチェック
-          if (filteredCompanies.includes(companyName)) {
+          // フィルター対象企業かチェック（部分一致）
+          if (filteredCompanies.some(filterCompany =>
+            filterCompany.length > 0 && companyName.includes(filterCompany)
+          )) {
             // カード自体がグリッドアイテムなので、親の検索は不要
             card.classList.add('youtrust-filter-dimmed');
             card.setAttribute('data-youtrust-filtered', 'true');
