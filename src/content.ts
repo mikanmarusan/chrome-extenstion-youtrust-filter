@@ -37,12 +37,12 @@ import {
   // セレクター定義（MUI Grid2対応）
   const SELECTORS: Selectors = {
     primary: {
-      gridItem: '.MuiGrid2-root.MuiGrid2-grid-xs-6',
+      gridItem: '.MuiGrid2-root.MuiGrid2-grid-xs-4',
       companyName: '.MuiTypography-root.MuiTypography-caption',
       friendButton: '[data-click-component-name="friendCandidate"]'
     },
     fallback: {
-      gridItem: ['div[class*="MuiGrid2-grid-xs-6"]'],
+      gridItem: ['div[class*="MuiGrid2-grid-xs-4"]'],
       companyName: ['span[class*="MuiTypography-caption"]']
     }
   };
