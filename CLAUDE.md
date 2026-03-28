@@ -12,8 +12,8 @@ YOUTRUST.jpの「知り合いかも？」ページで企業名ベースのフィ
 ## CSS Selectors (CRITICAL)
 YOUTRUSTのHTML構造が変わると動作しなくなる可能性あり。
 
-現在のセレクター（2024年確認済み）:
-- カード: `.MuiGrid2-root.MuiGrid2-grid-xs-6`
+現在のセレクター（2026年確認済み）:
+- カード: `.MuiGrid2-root.MuiGrid2-grid-xs-4`
 - 企業名: `.MuiTypography-root.MuiTypography-caption`（最初の要素）
 - ボタン: `[data-click-component-name="friendCandidate"]`
 
