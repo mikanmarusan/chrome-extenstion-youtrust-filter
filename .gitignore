@@ -1,6 +1,9 @@
 # Build output
 dist/
 
+# Playwright MCP artifacts
+.playwright-mcp/
+
 # Dependencies
 node_modules/
 
