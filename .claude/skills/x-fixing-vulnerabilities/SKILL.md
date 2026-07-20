@@ -1,5 +1,5 @@
 ---
-name: x-fixing-vulnerability
+name: x-fixing-vulnerabilities
 description: Node.js プロジェクトで npm audit が報告する high / critical 脆弱性を検出して修正する。「脆弱性を直して」「npm audit 直して」「security fix」「vulnerability fix」などの指示、または依存関係の脆弱性対応を求められたときに使用する。npm workspaces / pnpm / lerna / 単一 root を自動判定し、`--force` を使わず `npm audit fix` と `overrides` のみで修正する。検証失敗時は自動でロールバックする。
 argument-hint: ""
 allowed-tools: Bash(npm:*), Bash(git:*), Bash(pnpm:*), Bash(jq:*), Bash(test:*), Bash(sort:*), Bash(xargs:*), Bash(dirname:*), Bash(sed:*)
