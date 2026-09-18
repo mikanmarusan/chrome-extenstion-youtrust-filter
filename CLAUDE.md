@@ -22,6 +22,11 @@ YOUTRUSTのHTML構造が変わると動作しなくなる可能性あり。
 2. **パフォーマンス**: WeakSetで処理済み要素を追跡、50msスロットリング
 3. **ストレージ**: Chrome Storage Sync APIでクロスデバイス同期
 
+## Requirements
+- Node.js v24以上 / npm v11以上
+- バージョンは `.nvmrc` でピン留めし、`package.json` の `engines` で宣言
+- `.npmrc` の `engine-strict=true` により、要件を満たさない環境では `npm install` / `npm ci` が失敗する
+
 ## Commands
 - `npm run build` - プロダクションビルド
 - `npm run dev` - 開発ビルド（watch mode）

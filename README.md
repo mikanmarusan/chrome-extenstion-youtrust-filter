@@ -10,6 +10,8 @@ YOUTRUST.jpの「知り合いかも？」ページで特定企業の候補者を
 - 設定はChromeアカウント間で同期
 
 ## Installation
+前提: Node.js v24以上 / npm v11以上（`.nvmrc` 参照。nvm利用時は `nvm use`）
+
 1. `npm install`
 2. `npm run build`
 3. Chrome → `chrome://extensions/` → Developer Mode ON
