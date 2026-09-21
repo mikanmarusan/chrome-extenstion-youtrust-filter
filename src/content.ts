@@ -4,13 +4,21 @@ import {
   Selectors,
   NotificationType
 } from './types';
+import { throttle } from './utils';
+import {
+  COMPANY_NAME_SELECTOR,
+  USER_LINK_SELECTOR,
+  extractCompanyName,
+  findCandidateCards,
+  isCompanyFiltered,
+  resolveCardContainerSelector
+} from './cardDetector';
 
 (function(): void {
   let filterEnabled = true;
   let filteredCompanies: string[] = [];
   let processedCards = new WeakSet<Element>();
   let pendingMutations: MutationRecord[] = [];
-  // let processingTimer: number | null = null; // Currently unused
   const performanceMetrics: PerformanceMetrics = {
     totalProcessed: 0,
     totalFiltered: 0,
@@ -29,23 +37,12 @@ import {
   const DEFAULT_COMPANIES: string[] = [];
 
   // パフォーマンス設定
-  // const DEBOUNCE_DELAY = 100; // Currently unused
   const THROTTLE_INTERVAL = 50;
   const METRICS_REPORT_INTERVAL = 5000;
   const ERROR_NOTIFICATION_DELAY = 3000;
 
-  // セレクター定義（MUI Grid2対応）
-  const SELECTORS: Selectors = {
-    primary: {
-      gridItem: '.MuiGrid2-root.MuiGrid2-grid-xs-4',
-      companyName: '.MuiTypography-root.MuiTypography-caption',
-      friendButton: '[data-click-component-name="friendCandidate"]'
-    },
-    fallback: {
-      gridItem: ['div[class*="MuiGrid2-grid-xs-4"]'],
-      companyName: ['span[class*="MuiTypography-caption"]']
-    }
-  };
+  // 表示中ページのセレクター（init時に pathname から一度だけ解決する）
+  let selectors: Selectors | null = null;
 
   // エラーロギング関数
   function logError(error: Error | unknown, context = ''): void {
@@ -312,6 +309,14 @@ import {
   // 初期化
   async function init(): Promise<void> {
     try {
+      // 表示中ページに対応するカードコンテナのセレクターを一度だけ解決
+      const cardSelector = resolveCardContainerSelector(window.location.pathname);
+      if (!cardSelector) {
+        console.warn(`[YOUTrust Filter] Unsupported page: ${window.location.pathname}`);
+        return;
+      }
+      selectors = { card: cardSelector, companyName: COMPANY_NAME_SELECTOR };
+
       // ストレージから設定を読み込み
       const result = await chrome.storage.sync.get(['filterEnabled', 'filteredCompanies']);
 
@@ -334,35 +339,12 @@ import {
     }
   }
 
-  // セレクターを試行する関数 - Currently unused
-  /*
-  function trySelector(element: Element, selector: string | string[]): Element | null {
-    if (!element || !selector) return null;
-
-    try {
-      if (typeof selector === 'string') {
-        return element.querySelector(selector);
-      } else if (Array.isArray(selector)) {
-        for (const sel of selector) {
-          try {
-            const result = element.querySelector(sel);
-            if (result) return result;
-          } catch (selectorError) {
-            // 個別のセレクターエラーは警告レベル
-            console.warn(`[YOUTrust Filter] Invalid selector: ${sel}`);
-          }
-        }
-      }
-    } catch (e) {
-      logError(e, `Selector error: ${selector}`);
-    }
-    return null;
-  }
-  */
-
   // 候補者をフィルタリングする関数（差分検出対応）
   function filterCandidates(targetElements: Element[] | null = null): void {
     try {
+      const activeSelectors = selectors;
+      if (!activeSelectors) return;
+
       const startTime = performance.now();
       let processedCount = 0;
       let filteredCount = 0;
@@ -372,45 +354,19 @@ import {
       if (targetElements) {
         targetElements.forEach(element => {
           try {
-            // 要素自体がグリッドアイテムでfriendButtonを持つか確認
-            if (element.matches && element.matches(SELECTORS.primary.gridItem)) {
-              if (element.querySelector(SELECTORS.primary.friendButton)) {
-                candidateCards.push(element);
-              }
+            // MutationObserverはカード自体・カードを含む祖先のどちらも渡してくる
+            if (element.matches && element.matches(activeSelectors.card) &&
+                element.querySelector(USER_LINK_SELECTOR)) {
+              candidateCards.push(element);
             }
-            // 子要素からグリッドアイテムを検索
-            const childCards = element.querySelectorAll(SELECTORS.primary.gridItem);
-            childCards.forEach(card => {
-              if (card.querySelector(SELECTORS.primary.friendButton)) {
-                candidateCards.push(card);
-              }
-            });
+            candidateCards.push(...findCandidateCards(element, activeSelectors.card));
           } catch (elementError) {
             logError(elementError, 'Error processing target element');
           }
         });
       } else {
         try {
-          // まずプライマリセレクターを試す（friendButtonで候補者カードをフィルタリング）
-          const allGridItems = document.querySelectorAll(SELECTORS.primary.gridItem);
-          candidateCards = Array.from(allGridItems).filter(item =>
-            item.querySelector(SELECTORS.primary.friendButton)
-          );
-
-          // プライマリセレクターで見つからない場合のみフォールバック
-          if (candidateCards.length === 0 && SELECTORS.fallback) {
-            for (const selector of SELECTORS.fallback.gridItem) {
-              try {
-                const items = Array.from(document.querySelectorAll(selector));
-                candidateCards = items.filter(item =>
-                  item.querySelector(SELECTORS.primary.friendButton)
-                );
-                if (candidateCards.length > 0) break;
-              } catch (selectorError) {
-                console.warn(`[YOUTrust Filter] Fallback selector failed: ${selector}`);
-              }
-            }
-          }
+          candidateCards = findCandidateCards(document, activeSelectors.card);
         } catch (queryError) {
           logError(queryError, 'Error querying candidate cards');
           return;
@@ -426,16 +382,16 @@ import {
           processedCards.add(card);
           processedCount++;
 
-          // 企業名要素を探す（最初のcaption要素のみ = 企業名）
-          const companyElement = card.querySelector(SELECTORS.primary.companyName);
-          const companyName = companyElement?.textContent?.trim() || '';
+          // 企業名を取り出す（最初のcaption要素のみ = 企業名）
+          const companyName = extractCompanyName(card, activeSelectors.companyName);
 
           // フィルター対象企業かチェック（部分一致）
-          if (filteredCompanies.some(filterCompany =>
-            filterCompany.length > 0 && companyName.includes(filterCompany)
-          )) {
-            // カード自体がグリッドアイテムなので、親の検索は不要
+          if (isCompanyFiltered(companyName, filteredCompanies)) {
+            // カード自体がコンテナなので、親の検索は不要
             card.classList.add('youtrust-filter-dimmed');
+            // pointer-eventsはポインタ操作しか遮断しないため、
+            // inertでフォーカス・支援技術からも除外する（aria-hiddenはinertに含まれる）
+            card.setAttribute('inert', '');
             card.setAttribute('data-youtrust-filtered', 'true');
             card.setAttribute('data-filter-company', companyName);
             filteredCount++;
@@ -477,16 +433,13 @@ import {
           if (show) {
             // フィルター解除：通常表示に戻す
             htmlElement.classList.remove('youtrust-filter-dimmed');
+            htmlElement.removeAttribute('inert');
             htmlElement.removeAttribute('data-youtrust-filtered');
             htmlElement.removeAttribute('data-filter-company');
-            // チェック済みフラグもクリア
-            const checkedCards = htmlElement.querySelectorAll('[data-youtrust-filter-checked]');
-            checkedCards.forEach(card => {
-              card.removeAttribute('data-youtrust-filter-checked');
-            });
           } else {
-            // フィルター適用：半透明表示
+            // フィルター適用：半透明表示 + 操作・支援技術から除外
             htmlElement.classList.add('youtrust-filter-dimmed');
+            htmlElement.setAttribute('inert', '');
           }
         } catch (elementError) {
           logError(elementError, 'Error toggling element visibility');
@@ -496,11 +449,6 @@ import {
       // 表示に戻す場合は全体を再チェック
       if (show && filterEnabled) {
         try {
-          // チェック済みフラグを全てクリアしてから再フィルタリング
-          const allChecked = document.querySelectorAll('[data-youtrust-filter-checked]');
-          allChecked.forEach(card => {
-            card.removeAttribute('data-youtrust-filter-checked');
-          });
           // WeakSetもクリア - WeakSet doesn't have clear method, create new instance
           processedCards = new WeakSet<Element>();
           filterCandidates();
@@ -547,40 +495,6 @@ import {
   // 定期的にパフォーマンスレポートを出力
   setInterval(reportPerformanceMetrics, METRICS_REPORT_INTERVAL);
 
-  // デバウンス処理 - Currently unused
-  /*
-  function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T {
-    let timeoutId: number;
-    return ((...args: Parameters<T>) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => func(...args), delay) as unknown as number;
-    }) as T;
-  }
-  */
-
-  // スロットリング処理
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function throttle<T extends (...args: any[]) => void>(func: T, interval: number): T {
-    let lastCall = 0;
-    let timeoutId: number | null = null;
-
-    return ((...args: Parameters<T>) => {
-      const now = Date.now();
-      const timeSinceLastCall = now - lastCall;
-
-      if (timeSinceLastCall >= interval) {
-        lastCall = now;
-        func(...args);
-      } else {
-        if (timeoutId) clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          lastCall = Date.now();
-          func(...args);
-        }, interval - timeSinceLastCall) as unknown as number;
-      }
-    }) as T;
-  }
-
   // バッチ処理でMutationを処理
   function processMutationBatch(): void {
     if (pendingMutations.length === 0) return;
@@ -588,12 +502,19 @@ import {
     const elementsToProcess = new Set<Element>();
 
     // 追加された要素を収集
+    const activeSelectors = selectors;
+    if (!activeSelectors) {
+      pendingMutations = [];
+      return;
+    }
+
     pendingMutations.forEach(mutation => {
       mutation.addedNodes.forEach(node => {
         if (node.nodeType === 1) {
           const element = node as Element;
-          if (element.classList && (element.classList.contains('MuiGrid2-root') ||
-              element.querySelector(SELECTORS.primary.gridItem))) {
+          // 追加要素がカード自体でも、カードを含む祖先でも拾う
+          if ((element.matches && element.matches(activeSelectors.card)) ||
+              element.querySelector(activeSelectors.card)) {
             elementsToProcess.add(element);
           }
         }

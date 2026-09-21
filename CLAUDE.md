@@ -1,24 +1,42 @@
 # YOUTRUST Filter - Development Guidelines
 
 ## Project Overview
-YOUTRUST.jpの「知り合いかも？」ページで企業名ベースのフィルタリングを行うChrome拡張機能。
+YOUTRUST.jpの「つながり」（`/friend_connections`）と「知り合いかも？」（`/friend_candidates`）の
+両ページで企業名ベースのフィルタリングを行うChrome拡張機能。
 
 ## Architecture
 - `src/content.ts` - メインのフィルタリングロジック（DOM操作、MutationObserver）
+- `src/cardDetector.ts` - カード検出の純粋ロジック（DOMのみ、`chrome.*` 非依存でユニットテスト可能）
 - `src/popup.ts` - ポップアップUI管理
 - `src/types.ts` - TypeScript型定義
 - `public/` - 静的アセット（manifest.json, HTML, CSS, icons）
 
 ## CSS Selectors (CRITICAL)
-YOUTRUSTのHTML構造が変わると動作しなくなる可能性あり。
+YOUTRUSTのHTML構造が変わると動作しなくなる可能性あり。セレクターの知識は
+`src/cardDetector.ts` に集約し、`src/content.ts` 側には持たせない。
 
-現在のセレクター（2026年確認済み）:
-- カード: `.MuiGrid2-root.MuiGrid2-grid-xs-4`
-- 企業名: `.MuiTypography-root.MuiTypography-caption`（最初の要素）
-- ボタン: `[data-click-component-name="friendCandidate"]`
+### 検出ルール
+カードは「ページごとのコンテナセレクターに一致し、かつ配下に `/users/` リンクを持つ要素」
+という構造条件で判定する。`[data-click-component-name]` のようなサイト都合で消える属性には依存しない。
+
+- コンテナ（`PAGE_CARD_CONTAINERS`）:
+  - `/friend_candidates` → `.MuiGrid2-root.MuiGrid2-grid-xs-4`
+  - `/friend_connections` → `.MuiCardContent-root`
+- ユーザーリンク（`USER_LINK_SELECTOR`）: `a[href^="/users/"]`
+- 企業名（`COMPANY_NAME_SELECTOR`）: `.MuiTypography-root.MuiTypography-caption`（カード内の最初の要素）
+
+### 注意点
+- `resolveCardContainerSelector()` は末尾スラッシュを除去した上で前方一致する。
+  manifest の match が `friend_connections*` のため `/friend_connections/` でも注入されるので、
+  完全一致にすると無言で何もしない状態になる。
+- 1枚のカードはアバターと氏名の2本の `/users/` リンクを持つため、
+  重複排除はアンカーではなくコンテナ要素で行う。
+- `/friend_connections` に `.MuiGrid2-*` と `[data-click-component-name]` は存在しない。
+- 「一覧で見る」カードは `/users/` リンクを持たないため構造条件で自然に除外される。
+- ヘッダーのアバターだけはカード外の `/users/` リンクとして各ページに1本存在する。
 
 ## Key Technical Decisions
-1. **セレクター戦略**: MUIの安定したクラスプレフィックス + data属性を使用
+1. **セレクター戦略**: ページ別コンテナセレクター + `/users/` リンクの有無という構造条件で判定
 2. **パフォーマンス**: WeakSetで処理済み要素を追跡、50msスロットリング
 3. **ストレージ**: Chrome Storage Sync APIでクロスデバイス同期
 
@@ -30,6 +48,11 @@ YOUTRUSTのHTML構造が変わると動作しなくなる可能性あり。
 ## Commands
 - `npm run build` - プロダクションビルド
 - `npm run dev` - 開発ビルド（watch mode）
-- `npm run test` - Jestテスト実行
+- `npm run test` - Jestテスト実行（カバレッジ閾値もここで検証する）
 - `npm run lint` - ESLint実行
 - `npm run type-check` - TypeScript型チェック
+
+## Lessons
+- When changing a file through a scripted text substitution, make a non-match abort the edit and read the new value back out of the file before treating the change as landed. A substitution that quietly matches nothing leaves the old value in place while every later step reads the change as done.
+- When a function is added ahead of the change that will call it, say in the code that nothing calls it yet and where it will be wired in. Without that note its passing tests imply a runtime behavior the product does not actually have.
+- When a coverage gate is a single project-wide average, read the per-file numbers for the code the change actually touched. A fully covered new helper can lift the average on its own while the integration path that carries the real regression risk stays at zero.

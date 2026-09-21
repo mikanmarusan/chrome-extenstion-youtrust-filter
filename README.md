@@ -1,12 +1,14 @@
 # YOUTRUST Filter
 
-YOUTRUST.jpの「知り合いかも？」ページで特定企業の候補者をフィルターするChrome拡張機能。
+YOUTRUST.jpの「つながり」（`/friend_connections`）と「知り合いかも？」（`/friend_candidates`）の
+両ページで特定企業の候補者をフィルターするChrome拡張機能。
 
 ## Features
 - 指定した企業の候補者カードを薄く表示（フィルター）
 - ポップアップUIで企業の追加/削除が可能
 - フィルターのON/OFF切り替え
-- 無限スクロール対応
+- 無限スクロール・カルーセルの遅延描画に対応
+- フィルターしたカードは `inert` で操作・支援技術からも除外
 - 設定はChromeアカウント間で同期
 
 ## Installation

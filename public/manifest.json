@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YOUTRUST Filter",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "YOUTRUST.jpのつながりページで特定企業をフィルターする拡張機能",
   "permissions": [
     "storage"
@@ -11,7 +11,10 @@
   ],
   "content_scripts": [
     {
-      "matches": ["https://youtrust.jp/friend_candidates*"],
+      "matches": [
+        "https://youtrust.jp/friend_candidates*",
+        "https://youtrust.jp/friend_connections*"
+      ],
       "js": ["content.js"],
       "run_at": "document_idle"
     }
