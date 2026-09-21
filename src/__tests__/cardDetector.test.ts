@@ -207,20 +207,24 @@ describe('/friend_candidates regression pin', () => {
 });
 
 describe('shouldWarnNoCardsDetected', () => {
-  it('warns when user links exist but no card is recognized repeatedly', () => {
+  it('warns at 3+ user links, 0 recognized cards and 2 consecutive zero scans', () => {
+    expect(shouldWarnNoCardsDetected(3, 0, 2)).toBe(true);
     expect(shouldWarnNoCardsDetected(20, 0, 3)).toBe(true);
   });
 
-  it('does not warn while cards are still recognized', () => {
-    expect(shouldWarnNoCardsDetected(20, 4, 5)).toBe(false);
+  it('does not warn at the same counts with only one zero scan', () => {
+    expect(shouldWarnNoCardsDetected(3, 0, 1)).toBe(false);
+    expect(shouldWarnNoCardsDetected(20, 0, 1)).toBe(false);
   });
 
-  it('does not warn when only the header avatar link is present', () => {
+  it('does not warn when user links stay at the header-avatar noise floor', () => {
     expect(shouldWarnNoCardsDetected(1, 0, 5)).toBe(false);
     expect(shouldWarnNoCardsDetected(0, 0, 5)).toBe(false);
+    expect(shouldWarnNoCardsDetected(2, 0, 5)).toBe(false);
   });
 
-  it('does not warn before the consecutive zero-scan threshold is reached', () => {
-    expect(shouldWarnNoCardsDetected(20, 0, 2)).toBe(false);
+  it('does not warn while at least one card is recognized', () => {
+    expect(shouldWarnNoCardsDetected(20, 1, 5)).toBe(false);
+    expect(shouldWarnNoCardsDetected(20, 4, 5)).toBe(false);
   });
 });

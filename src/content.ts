@@ -11,7 +11,8 @@ import {
   extractCompanyName,
   findCandidateCards,
   isCompanyFiltered,
-  resolveCardContainerSelector
+  resolveCardContainerSelector,
+  shouldWarnNoCardsDetected
 } from './cardDetector';
 
 (function(): void {
@@ -28,6 +29,21 @@ import {
   let currentFilteredCount = 0;
   let statusIndicator: HTMLDivElement | null = null;
 
+  // カード検出失敗の追跡（連続でカード0件だったページ全体スキャンの回数）
+  let consecutiveZeroScans = 0;
+  let noCardsDetectedWarned = false;
+
+  // 検出失敗時の表示文言
+  const NO_CARDS_STATUS_TEXT = 'フィルター: カードを検出できません';
+  const NO_CARDS_TOAST_MESSAGE =
+    '候補者カードを検出できませんでした。ページの構成が変わった可能性があります。';
+  const NO_CARDS_ICON_COLOR = '#f44336';
+
+  // 件数バッジは「今DOMにあるカード」しか数えられないことを補足する
+  const COUNT_BADGE_TITLE =
+    '現在表示されているカードのうち、フィルター対象企業と一致した件数です' +
+    '（画面外や未読み込みのカードは含みません）';
+
   // エラーログ管理
   const ERROR_LOG_MAX_SIZE = 50;
   let errorLog: ErrorLogEntry[] = [];
@@ -38,6 +54,10 @@ import {
 
   // パフォーマンス設定
   const THROTTLE_INTERVAL = 50;
+  // 全体再スキャンはページ全体を舐めるので、Mutationより粗い間隔に抑える
+  const DETECTION_SCAN_INTERVAL = 500;
+  // DOMが静止したまま壊れているページでも2回目のスキャンが走るようにする猶予
+  const INITIAL_RECHECK_DELAY = 3000;
   const METRICS_REPORT_INTERVAL = 5000;
   const ERROR_NOTIFICATION_DELAY = 3000;
 
@@ -134,6 +154,7 @@ import {
         margin-left: 8px;
       `;
       count.textContent = '0件';
+      count.title = COUNT_BADGE_TITLE;
 
       statusIndicator.appendChild(icon);
       statusIndicator.appendChild(text);
@@ -226,7 +247,12 @@ import {
       const count = document.getElementById('filter-count-badge');
 
       if (icon && text && count) {
-        if (filterEnabled) {
+        if (filterEnabled && noCardsDetectedWarned) {
+          // カードを1枚も認識できていない間は「有効」と言わずに失敗を表に出す
+          icon.style.background = NO_CARDS_ICON_COLOR;
+          text.textContent = NO_CARDS_STATUS_TEXT;
+          count.style.display = 'none';
+        } else if (filterEnabled) {
           icon.style.background = '#4CAF50';
           text.textContent = `フィルター: 有効 (${filteredCompanies.length}社)`;
           count.textContent = `${currentFilteredCount}件除外`;
@@ -248,6 +274,58 @@ import {
     } catch (error) {
       logError(error, 'Failed to update status indicator');
     }
+  }
+
+  /**
+   * スキャン結果を検出状態に反映する。
+   * 連続0件を数えるのはページ全体のスキャンだけ（差分スキャンの0件は、
+   * その部分木にカードが無かっただけでセレクター破損の証拠にならない）。
+   * 失敗状態から抜けるのはカードを1枚でも認識できたときだけで、
+   * /users/ リンクの増減では抜けない（遅延描画でリンク数が揺れても再通知しない）。
+   */
+  function recordScanResult(recognizedCardCount: number, isFullScan: boolean): void {
+    if (recognizedCardCount > 0) {
+      // 1枚でも認識できたら通常状態へ戻す
+      consecutiveZeroScans = 0;
+      noCardsDetectedWarned = false;
+      return;
+    }
+
+    if (!isFullScan) return;
+    consecutiveZeroScans++;
+
+    // 既に失敗状態なら再判定も再通知もしない（トーストは状態に入った1回だけ）
+    if (noCardsDetectedWarned) return;
+
+    const userLinkCount = document.querySelectorAll(USER_LINK_SELECTOR).length;
+    if (!shouldWarnNoCardsDetected(userLinkCount, recognizedCardCount, consecutiveZeroScans)) {
+      return;
+    }
+
+    noCardsDetectedWarned = true;
+    notifyUser(NO_CARDS_TOAST_MESSAGE, 'error');
+  }
+
+  /**
+   * カードセレクターに1件も一致しないDOM更新が来たときのページ全体スキャン。
+   * セレクター破損はまさにこの形で現れる。また、空のコンテナが先に描画され
+   * 後から中身が入る二段階マウントでは、差分スキャンがカードを取りこぼすため、
+   * ここで全体を数えるだけでなくフィルタリングもやり直す。
+   * 無関係なDOM更新でもこの経路に入るため、呼び出し側でスロットリングする。
+   * （処理済みカードは WeakSet で弾かれるので再スキャンは安い）
+   */
+  function rescanWholePage(): void {
+    if (!selectors || !filterEnabled) return;
+    filterCandidates();
+  }
+
+  /**
+   * DOM更新が一度も起きないページでは初回スキャンしか走らないため、
+   * 少し待ってからもう一度だけ全体を取り直す（検出失敗はここで初めて確定する）。
+   * 初期化時と、フィルター再有効化時の両方に同じ保険を掛ける。
+   */
+  function scheduleDelayedRescan(): void {
+    setTimeout(rescanWholePage, INITIAL_RECHECK_DELAY);
   }
 
   // ユーザー通知関数
@@ -333,6 +411,8 @@ import {
 
       // DOM変更の監視を開始
       observeDOM();
+
+      scheduleDelayedRescan();
     } catch (error) {
       logError(error, 'Initialization failed');
       notifyUser('フィルター機能の初期化に失敗しました。ページを再読み込みしてください。', 'error');
@@ -401,8 +481,9 @@ import {
         }
       });
 
-      // フィルター数を更新
+      // フィルター数と検出状態を更新
       currentFilteredCount = document.querySelectorAll('[data-youtrust-filtered="true"]').length;
+      recordScanResult(candidateCards.length, targetElements === null);
       updateStatusIndicator();
 
       // パフォーマンスメトリクスを更新
@@ -529,11 +610,16 @@ import {
       requestAnimationFrame(() => {
         filterCandidates(Array.from(elementsToProcess));
       });
+      return;
     }
+
+    // カードが1件も一致しないDOM更新こそセレクター破損の兆候なので、全体を取り直す
+    throttledWholePageRescan();
   }
 
   // スロットリングされた処理関数
   const throttledProcessMutations = throttle(processMutationBatch, THROTTLE_INTERVAL);
+  const throttledWholePageRescan = throttle(rescanWholePage, DETECTION_SCAN_INTERVAL);
 
   // DOM変更を監視（改善版）
   function observeDOM(): void {
@@ -571,6 +657,13 @@ import {
         if (changes.filterEnabled) {
           filterEnabled = changes.filterEnabled.newValue;
           toggleCards(!filterEnabled);
+          if (filterEnabled) {
+            // 再有効化時は古い検出状態を引き継がず、その場のDOMから取り直す
+            consecutiveZeroScans = 0;
+            noCardsDetectedWarned = false;
+            filterCandidates();
+            scheduleDelayedRescan();
+          }
           updateStatusIndicator();
         }
 

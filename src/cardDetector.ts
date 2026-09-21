@@ -20,8 +20,15 @@ export const PAGE_CARD_CONTAINERS: Record<string, string> = {
 /** ヘッダーのアバターリンク1件はカード外に常時存在する */
 export const NON_CARD_USER_LINK_COUNT = 1;
 
+/**
+ * 警告を出すために必要な /users/ リンクの本数。
+ * カード外のリンクは NON_CARD_USER_LINK_COUNT（ヘッダーのアバター1本）だけなので、
+ * そこに余裕を2本足した本数を「カードは描画されているのに認識できていない」の下限とする。
+ */
+export const USER_LINK_WARN_THRESHOLD = NON_CARD_USER_LINK_COUNT + 2;
+
 /** 連続でカード0件だった場合に警告を出す回数のしきい値 */
-export const ZERO_SCAN_WARN_THRESHOLD = 3;
+export const ZERO_SCAN_WARN_THRESHOLD = 2;
 
 /**
  * pathname からカードコンテナのセレクターを解決する。
@@ -89,9 +96,8 @@ export function isCompanyFiltered(companyName: string, filteredCompanies: string
  * 「/users/ リンクは存在するのにカードを1枚も認識できない」状態が
  * 連続して続いた場合に、セレクター破損の警告を出すべきかを返す。
  *
- * 注意: この判定関数は現時点ではどこからも呼ばれていない。
- * 実際の警告表示（連続0件スキャンの計数と通知）は後続Issueで `content.ts` に組み込む。
- * 本Issueではモジュールを完結させるため、関数とテストのみを先に置いている。
+ * 連続0件スキャンの計数とステータス表示の切り替えは `content.ts` が行う。
+ * 判定そのものをここに置くのは、IIFEクロージャの内側はテストから触れないため。
  */
 export function shouldWarnNoCardsDetected(
   userLinkCount: number,
@@ -99,6 +105,6 @@ export function shouldWarnNoCardsDetected(
   consecutiveZeroScans: number
 ): boolean {
   if (recognizedCardCount > 0) return false;
-  if (userLinkCount <= NON_CARD_USER_LINK_COUNT) return false;
+  if (userLinkCount < USER_LINK_WARN_THRESHOLD) return false;
   return consecutiveZeroScans >= ZERO_SCAN_WARN_THRESHOLD;
 }
