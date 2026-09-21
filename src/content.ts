@@ -673,6 +673,12 @@ import {
 
           // 新しいフィルターを適用
           filteredCompanies = changes.filteredCompanies.newValue;
+
+          // 処理済み記録は filterEnabled の値に関わらず捨てる。
+          // 無効中にリストを編集すると、有効化時の走査まで再判定の機会が無く、
+          // 既にWeakSetに入っているカードが新しいリストで見直されないため。
+          processedCards = new WeakSet<Element>();
+
           if (filterEnabled) {
             filterCandidates();
           }
