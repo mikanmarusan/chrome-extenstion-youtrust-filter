@@ -1,11 +1,11 @@
 {
   "name": "youtrust-filter",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "YOUTRUST.jpのつながりページで特定企業をフィルターする拡張機能",
   "scripts": {
     "build": "webpack --mode production",
     "dev": "webpack --mode development --watch",
-    "test": "jest",
+    "test": "jest --coverage",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "lint": "eslint . --ext .ts,.tsx",
@@ -54,10 +54,10 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 10,
-        "functions": 15,
-        "lines": 10,
-        "statements": 10
+        "branches": 42,
+        "functions": 52,
+        "lines": 48,
+        "statements": 48
       }
     }
   }

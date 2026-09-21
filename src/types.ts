@@ -19,25 +19,10 @@ export interface ErrorLogEntry {
 }
 
 export interface Selectors {
-  primary: {
-    gridItem: string;
-    companyName: string;
-    friendButton: string;
-  };
-  fallback: {
-    gridItem: string[];
-    companyName: string[];
-  };
+  /** ページごとに解決されるカードコンテナのセレクター */
+  card: string;
+  /** カード内の企業名要素のセレクター */
+  companyName: string;
 }
 
 export type NotificationType = 'error' | 'success' | 'info';
-
-// Currently unused but may be used in future
-/*
-export interface StatusIndicatorElements {
-  container: HTMLDivElement | null;
-  icon: HTMLSpanElement | null;
-  text: HTMLSpanElement | null;
-  count: HTMLSpanElement | null;
-}
-*/

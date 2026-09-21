@@ -1,0 +1,85 @@
+<!--
+  /friend_connections の構造を模した匿名化フィクスチャ。
+  実セッションのキャプチャは一切含めず、合成した氏名・企業名のみを使用する。
+  このページには .MuiGrid2-* も [data-click-component-name] も存在せず、
+  カードは .MuiCardContent-root をコンテナとして横スクロールのカルーセルに並ぶ。
+-->
+<div id="scrollableMainContentName">
+  <header class="MuiAppBar-root">
+    <!-- カード外に常に1つだけ存在するヘッダーのアバターリンク -->
+    <a href="/users/fixture-user-self">
+      <img class="MuiAvatar-img" src="placeholder-avatar.png" alt="Fixture Person Self">
+    </a>
+  </header>
+
+  <section class="MuiBox-root">
+    <h2 class="MuiTypography-root MuiTypography-h6">知り合いかも</h2>
+    <div class="MuiBox-root carousel">
+      <!-- 通常の1社カード -->
+      <div class="MuiPaper-root MuiCard-root">
+        <div class="MuiCardContent-root">
+          <a href="/users/fixture-user-11">
+            <img class="MuiAvatar-img" src="placeholder-avatar.png" alt="Fixture Person 11">
+          </a>
+          <a href="/users/fixture-user-11">
+            <span class="MuiTypography-root MuiTypography-body1">Fixture Person 11</span>
+          </a>
+          <span class="MuiTypography-root MuiTypography-caption">Example株式会社</span>
+          <span class="MuiTypography-root MuiTypography-caption">Fixture Role</span>
+          <button type="button">つながる</button>
+        </div>
+      </div>
+
+      <!-- 複数社がスラッシュ区切りで1つのテキストノードに入るカード -->
+      <div class="MuiPaper-root MuiCard-root">
+        <div class="MuiCardContent-root">
+          <a href="/users/fixture-user-12">
+            <img class="MuiAvatar-img" src="placeholder-avatar.png" alt="Fixture Person 12">
+          </a>
+          <a href="/users/fixture-user-12">
+            <span class="MuiTypography-root MuiTypography-body1">Fixture Person 12</span>
+          </a>
+          <span class="MuiTypography-root MuiTypography-caption">Example株式会社/ExampleTwo株式会社/ExampleThree株式会社</span>
+          <span class="MuiTypography-root MuiTypography-caption">Fixture Role</span>
+          <button type="button">つながる</button>
+        </div>
+      </div>
+
+      <!-- 企業名ではなく「フリーランス」が入るカード -->
+      <div class="MuiPaper-root MuiCard-root">
+        <div class="MuiCardContent-root">
+          <a href="/users/fixture-user-13">
+            <img class="MuiAvatar-img" src="placeholder-avatar.png" alt="Fixture Person 13">
+          </a>
+          <a href="/users/fixture-user-13">
+            <span class="MuiTypography-root MuiTypography-body1">Fixture Person 13</span>
+          </a>
+          <span class="MuiTypography-root MuiTypography-caption">フリーランス</span>
+          <button type="button">つながる</button>
+        </div>
+      </div>
+
+      <!-- caption が欠落しているカード -->
+      <div class="MuiPaper-root MuiCard-root">
+        <div class="MuiCardContent-root">
+          <a href="/users/fixture-user-14">
+            <img class="MuiAvatar-img" src="placeholder-avatar.png" alt="Fixture Person 14">
+          </a>
+          <a href="/users/fixture-user-14">
+            <span class="MuiTypography-root MuiTypography-body1">Fixture Person 14</span>
+          </a>
+          <button type="button">つながる</button>
+        </div>
+      </div>
+
+      <!-- /users/ リンクを持たないカルーセル末尾の導線カード -->
+      <div class="MuiPaper-root MuiCard-root">
+        <div class="MuiCardContent-root">
+          <a href="/friend_candidates">
+            <span class="MuiTypography-root MuiTypography-caption">一覧で見る</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
