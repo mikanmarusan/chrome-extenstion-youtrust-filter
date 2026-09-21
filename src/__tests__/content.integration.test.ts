@@ -66,14 +66,18 @@ function clearPendingTimers(): void {
   }
 }
 
-async function loadContentScript(pathname: string, fixture: string): Promise<void> {
+async function loadContentScript(
+  pathname: string,
+  fixture: string,
+  filteredCompanies: string[] = ['Example株式会社']
+): Promise<void> {
   clearPendingTimers();
   window.history.replaceState({}, '', pathname);
   document.head.innerHTML = '';
   document.body.innerHTML = fixtureHtml(fixture);
   (chrome.storage.sync.get as jest.Mock).mockResolvedValue({
     filterEnabled: true,
-    filteredCompanies: ['Example株式会社']
+    filteredCompanies
   });
 
   jest.resetModules();
@@ -283,5 +287,41 @@ describe('カードを検出できないときのステータス表示', () => {
 
     expect(statusText()).not.toBe(NO_CARDS_STATUS_TEXT);
     expect(toastCreationCount()).toBe(0);
+  });
+});
+
+describe('フィルター無効中に企業リストを編集したとき', () => {
+  beforeEach(() => {
+    (chrome.storage.sync.get as jest.Mock).mockReset();
+    (chrome.storage.local.set as jest.Mock).mockReset();
+    (chrome.storage.onChanged.addListener as jest.Mock).mockClear();
+  });
+
+  /** 初回スキャンで処理済みになったカード（企業名は Example株式会社） */
+  function processedCard(): HTMLElement {
+    const link = document.querySelector('a[href="/users/fixture-user-11"]') as Element;
+    return link.closest('.MuiCardContent-root') as HTMLElement;
+  }
+
+  it('再有効化したとき、処理済みカードも新しいリストで判定し直す', async () => {
+    // 空のリストで読み込む: 全カードが処理済みWeakSetに入り、どれも除外されない
+    await loadContentScript('/friend_connections', 'friendConnections.html', []);
+    const card = processedCard();
+    expect(card.classList.contains('youtrust-filter-dimmed')).toBe(false);
+
+    const listener = latestStorageChangeListener();
+
+    // 1. ポップアップでフィルターを無効にする
+    listener({ filterEnabled: { newValue: false } }, 'sync');
+    expect(statusText()).toBe('フィルター: 無効');
+
+    // 2. 無効のままリストに企業を追加する（フィクスチャDOMに存在する企業名）
+    listener({ filteredCompanies: { newValue: ['Example株式会社'] } }, 'sync');
+
+    // 3. フィルターを再び有効にする
+    listener({ filterEnabled: { newValue: true } }, 'sync');
+
+    expect(card.classList.contains('youtrust-filter-dimmed')).toBe(true);
+    expect(card.getAttribute('data-youtrust-filtered')).toBe('true');
   });
 });
