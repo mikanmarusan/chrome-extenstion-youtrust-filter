@@ -1,0 +1,39 @@
+<!--
+  コンテナセレクターが陳腐化した状態を模した匿名化フィクスチャ。
+  カードは描画されている（/users/ リンクが複数ある）のに、
+  コンテナのクラス名が変わっていて .MuiCardContent-root に一致しない。
+  - ユーザーIDは fixture-user-N
+  - 氏名は Fixture Person N
+  - 企業名は Example 系の合成名
+-->
+<div id="scrollableMainContentName">
+  <header class="MuiAppBar-root">
+    <!-- カード外に常に1つだけ存在するヘッダーのアバターリンク -->
+    <a href="/users/fixture-user-self">
+      <img class="MuiAvatar-img" src="placeholder-avatar.png" alt="Fixture Person Self">
+    </a>
+  </header>
+
+  <div class="carousel">
+    <!-- コンテナのクラス名が .MuiCardContent-root から変わったカード群 -->
+    <div class="MuiCardBody-root">
+      <a href="/users/fixture-user-1">
+        <img class="MuiAvatar-img" src="placeholder-avatar.png" alt="Fixture Person 1">
+      </a>
+      <a href="/users/fixture-user-1">
+        <span class="MuiTypography-root MuiTypography-body1">Fixture Person 1</span>
+      </a>
+      <span class="MuiTypography-root MuiTypography-caption">Example株式会社</span>
+    </div>
+
+    <div class="MuiCardBody-root">
+      <a href="/users/fixture-user-2">
+        <img class="MuiAvatar-img" src="placeholder-avatar.png" alt="Fixture Person 2">
+      </a>
+      <a href="/users/fixture-user-2">
+        <span class="MuiTypography-root MuiTypography-body1">Fixture Person 2</span>
+      </a>
+      <span class="MuiTypography-root MuiTypography-caption">ExampleTwo株式会社</span>
+    </div>
+  </div>
+</div>
