@@ -81,7 +81,7 @@ async function loadContentScript(
   });
 
   jest.resetModules();
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('../content');
   // init() は非同期のため、microtaskとタイマーをflushしてから検証する
   await new Promise(resolve => setTimeout(resolve, 0));
