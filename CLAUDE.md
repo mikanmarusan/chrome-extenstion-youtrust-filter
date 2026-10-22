@@ -47,6 +47,9 @@ YOUTRUSTのHTML構造が変わると動作しなくなる可能性あり。セ�
 - Node.js v24以上 / npm v11以上
 - バージョンは `.nvmrc` でピン留めし、`package.json` の `engines` で宣言
 - `.npmrc` の `engine-strict=true` により、要件を満たさない環境では `npm install` / `npm ci` が失敗する
+- TypeScript は 6.0.x が上限。typescript@7 は従来のコンパイラAPIを提供せず、ts-jest（`<7`）・ts-loader・typescript-eslint（`<6.1.0`）が動かない
+- `@types/node` は Node のメジャー（24）に合わせる
+- ESLint は flat config（`eslint.config.mjs`）
 
 ## Commands
 - `npm run build` - プロダクションビルド
