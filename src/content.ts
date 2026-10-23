@@ -2,7 +2,8 @@ import {
   PerformanceMetrics,
   ErrorLogEntry,
   Selectors,
-  NotificationType
+  NotificationType,
+  FilterConfig
 } from './types';
 import { throttle } from './utils';
 import {
@@ -396,7 +397,7 @@ import {
       selectors = { card: cardSelector, companyName: COMPANY_NAME_SELECTOR };
 
       // ストレージから設定を読み込み
-      const result = await chrome.storage.sync.get(['filterEnabled', 'filteredCompanies']);
+      const result = await chrome.storage.sync.get<Partial<FilterConfig>>(['filterEnabled', 'filteredCompanies']);
 
       filterEnabled = result.filterEnabled !== undefined ? result.filterEnabled : true;
       filteredCompanies = result.filteredCompanies || DEFAULT_COMPANIES;
@@ -655,7 +656,7 @@ import {
     try {
       if (namespace === 'sync') {
         if (changes.filterEnabled) {
-          filterEnabled = changes.filterEnabled.newValue;
+          filterEnabled = changes.filterEnabled.newValue as boolean;
           toggleCards(!filterEnabled);
           if (filterEnabled) {
             // 再有効化時は古い検出状態を引き継がず、その場のDOMから取り直す
@@ -672,7 +673,7 @@ import {
           toggleCards(true);
 
           // 新しいフィルターを適用
-          filteredCompanies = changes.filteredCompanies.newValue;
+          filteredCompanies = changes.filteredCompanies.newValue as string[];
 
           // 処理済み記録は filterEnabled の値に関わらず捨てる。
           // 無効中にリストを編集すると、有効化時の走査まで再判定の機会が無く、

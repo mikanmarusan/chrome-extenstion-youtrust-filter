@@ -1,4 +1,4 @@
-import { ErrorLogEntry, NotificationType } from './types';
+import { ErrorLogEntry, FilterConfig, NotificationType } from './types';
 
 // デフォルトのフィルター企業（空配列：ユーザーが明示的に追加する）
 const DEFAULT_COMPANIES: string[] = [];
@@ -91,7 +91,7 @@ function showUserFeedback(message: string, type: NotificationType = 'error'): vo
 async function init(): Promise<void> {
   try {
     // ストレージから設定を読み込み
-    const result = await chrome.storage.sync.get(['filterEnabled', 'filteredCompanies']);
+    const result = await chrome.storage.sync.get<Partial<FilterConfig>>(['filterEnabled', 'filteredCompanies']);
 
     // 初回起動時はデフォルト値を設定
     if (result.filterEnabled === undefined) {

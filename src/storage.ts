@@ -4,7 +4,7 @@ import { DEFAULT_COMPANIES } from './utils';
 // Chrome Storage API のラッパー関数
 export async function loadFilterConfig(): Promise<FilterConfig> {
   try {
-    const result = await chrome.storage.sync.get(['filterEnabled', 'filteredCompanies']);
+    const result = await chrome.storage.sync.get<Partial<FilterConfig>>(['filterEnabled', 'filteredCompanies']);
 
     return {
       filterEnabled: result.filterEnabled !== undefined ? result.filterEnabled : true,
